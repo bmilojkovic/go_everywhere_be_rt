@@ -60,8 +60,21 @@ class User {
 
   }
 
-  test2(payload) {
-    this.geSio.emit('chat', payload)
+  setUpChats() {
+    //incoming chat requests handling
+    this.ogsSio.on('chat-message', (payload) => this.handlePublicMessage('message', payload)); //sent and recived messages go through this channel
+    this.ogsSio.on('chat-part', (payload) => this.handlePublicMessage('leave', payload));  // when another user joins any of the chat channels we will get notified
+    this.ogsSio.on('chat-join', (payload) => this.handlePublicMessage('join', payload)); // when another user joins any chat channel we will get notified
+
+    // Send private messages to the appropriate channel
+    this.ogsSio.on('private-message', (payload) => this.geSio.emit('private-chat', payload));
+
+    this.geSio.on('public-chat', (payload) => this.ogsSio.emit('chat/send', { ...payload, uuid: generateUUID() }));
+
+    // TODO :Maybe drop generateGUID and just use "asd.1" :\
+    // NOTE: "uid" is not a typo
+    this.geSio.on('private-chat', (payload) => this.ogsSio.emit('chat/pm', { ...payload, uid: generateUUID() }));
+
   }
 
   handleDisconnect() {
@@ -69,27 +82,16 @@ class User {
     // TODO: additional cleanup?
   }
 
-  handlePrivateMessage(payload) {
-    this.geSio.emit('private-chat', payload);
-  }
-
+  /**
+   * Helper function for sending all public chat data to single channel
+   * @param {*} type
+   * @param {*} payload
+   */
   handlePublicMessage(type, payload) {
-    this.geSio.emit('public-chat', {payload, type}); // TODO: unpack payload?
+    this.geSio.emit('public-chat', { payload, type }); // TODO: unpack payload?
   }
 
   registerOGSListener() {
-    this.ogsSio.on('notification', this.fooBar.bind(this));
-    this.ogsSio.on('net/pong', this.fooBar.bind(this));
-    // this.ogsSio.on('game', this.fooBar.bind(this));
-    this.ogsSio.on('private-message', this.fooBar.bind(this));
-    //incoming chat requests handling
-    this.ogsSio.on('chat-message', (payload) => this.handlePublicMessage('message', payload)); //sent and recived messages go through this channel
-    this.ogsSio.on('chat-part', (payload) => this.handlePublicMessage('leave', payload));  // when another user joins any of the chat channels we will get notified
-    this.ogsSio.on('chat-join', (payload) => this.handlePublicMessage('join', payload)); // when another user joins any chat channel we will get notified
-    // when entering or leaving the chat channel we emit which channel is it
-    //handling private chat
-    this.ogsSio.on('chat/pm', (payload) => this.handlePrivateMessage(payload));
-    this.ogsSio.on('private-message', (payload) => this.handlePrivateMessage(payload));
 
     /*
      * Game stuff
@@ -101,18 +103,6 @@ class User {
   }
 
   registerGEListeners() {
-
-    this.geSio.on('chat',
-        (payload) => this.ogsSio.emit('chat/send', {...payload, uuid: generateUUID()})
-    );
-
-    this.geSio.on('private-chat', (payload) => {
-      let message = {
-          ...payload,uid:'asd.1'
-      };
-      this.ogsSio.emit('chat/pm', message);
-    });
-
     /*
      * Game stuff:
      * game/connect (game_id, player_id, chat = true)
@@ -135,7 +125,7 @@ class User {
   }
 
   disconnectFromGame(payload) {
-    if(!payload.hasOwnProperty('game_id')) {
+    if (!payload.hasOwnProperty('game_id')) {
       return false;
     }
 
@@ -153,7 +143,7 @@ class User {
   }
 
   connectToGame(payload) {
-    if(!payload.hasOwnProperty('game_id')) {
+    if (!payload.hasOwnProperty('game_id')) {
       return false;
     }
 
@@ -170,19 +160,19 @@ class User {
      * game-undo-requested (game_id, player_id, move_number)
      * game-undo-accepted (move_number)
      */
-    this.ogsSio.on(`game/${game_id}/gamedata`, (payload) => this.geSio.emit('game-gamedata', {payload, game_id}));
-    this.ogsSio.on(`game/${game_id}/clock`, (payload) => this.geSio.emit('game-clock', {payload, game_id}));
-    this.ogsSio.on(`game/${game_id}/move`, (payload) => this.geSio.emit('game-move', {payload, game_id}));
-    this.ogsSio.on(`game/${game_id}/conditional_moves`, (payload) => this.geSio.emit('game-conditional-moves', {payload, game_id}));
-    this.ogsSio.on(`game/${game_id}/reset-chats`, (payload) => this.geSio.emit('game-reset-chats', {payload, game_id}));
-    this.ogsSio.on(`game/${game_id}/undo_requested`, (payload) => this.geSio.emit('game-undo-requested', {payload, game_id}));
-    this.ogsSio.on(`game/${game_id}/undo_accepted`, (payload) => this.geSio.emit('game-undo-accepted', {payload, game_id}));
+    this.ogsSio.on(`game/${game_id}/gamedata`, (payload) => this.geSio.emit('game-gamedata', { payload, game_id }));
+    this.ogsSio.on(`game/${game_id}/clock`, (payload) => this.geSio.emit('game-clock', { payload, game_id }));
+    this.ogsSio.on(`game/${game_id}/move`, (payload) => this.geSio.emit('game-move', { payload, game_id }));
+    this.ogsSio.on(`game/${game_id}/conditional_moves`, (payload) => this.geSio.emit('game-conditional-moves', { payload, game_id }));
+    this.ogsSio.on(`game/${game_id}/reset-chats`, (payload) => this.geSio.emit('game-reset-chats', { payload, game_id }));
+    this.ogsSio.on(`game/${game_id}/undo_requested`, (payload) => this.geSio.emit('game-undo-requested', { payload, game_id }));
+    this.ogsSio.on(`game/${game_id}/undo_accepted`, (payload) => this.geSio.emit('game-undo-accepted', { payload, game_id }));
   }
 
   registerForChat(channel) {
     //here we register for individual chats
     channel = 'global-' + channel; // FIXME
-    this.ogsSio.emit('chat/join', {channel});
+    this.ogsSio.emit('chat/join', { channel });
   }
 
   joinChats() {
@@ -194,8 +184,8 @@ class User {
   mainLogic() {
     this.ogsSio.emit('hostinfo');
 
-    this.ogsSio.emit('ui-pushes/subscribe', {channel: "announcements"});
-    this.ogsSio.emit('ui-pushes/subscribe', {channel: "undefined"});
+    this.ogsSio.emit('ui-pushes/subscribe', { channel: "announcements" });
+    this.ogsSio.emit('ui-pushes/subscribe', { channel: "undefined" });
     this.ogsSio.emit('notification/connect', {
       "player_id": this.userData.userId,
       "auth": this.userData.notificationAuth
@@ -224,7 +214,7 @@ class User {
 
     this.ogsSio.emit("ad", "supporter");
     this.ogsSio.emit("ad", "supporter");
-    this.ogsSio.emit("seek_graph/connect", {'channel': 'global'});
+    this.ogsSio.emit("seek_graph/connect", { 'channel': 'global' });
     return;
   }
 
