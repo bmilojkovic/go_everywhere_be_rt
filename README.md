@@ -4,6 +4,77 @@
 
 `authenticate` - used only for initial authentication
 
+### Lobby channels:
+
+`seekgraph-global` - In communication only. Send available challenges.
+Example:
+```javascript
+
+```
+
+`challenge-create` - Out communication only. Used for creating a challenge.
+Example:
+```javascript
+{
+    "initialized": false,
+    "min_ranking": -1000,
+    "max_ranking": 1000,
+    "challenger_color": "automatic",
+    "game": {
+        "handicap": 0,
+        "time_control": "fischer",
+        "challenger_color": "white",
+        "rules": "japanese",
+        "ranked": false,
+        "width": 9,
+        "height": 9,
+        "komi_auto": "custom",
+        "komi": 5.5,
+        "disable_analysis": false,
+        "pause_on_weekends": false,
+        "initial_state": null,
+        "private": false,
+        "name": "mojaigra",
+        "time_control_parameters": {
+            "system": "fischer",
+            "speed": "live",
+            "initial_time": 3600,
+            "time_increment": 1800,
+            "max_time": 3600,
+            "pause_on_weekends": false,
+            "time_control": "fischer"
+        }
+    }
+}
+```
+
+`challenge-accept` - Two-way communication. Out is used for accepting a challenge,
+in is used for notifying the client that their challenge has been accepted.
+In example:
+```javascript
+{
+    "challenge_id": "14120412",
+    "game_id": "123123123",
+    "player_id": "123591" // The player that accepted the challenge
+}
+```
+
+Out example:
+```javascript
+{
+    "challenge_id": "14120412",
+    "game_id": "123123123"
+}
+```
+
+`challenge-cancel` - Out communication only. Used for cancelling a previously issued
+challenge. Example:
+```javascript
+{
+    "challenge_id": "14120412"
+}
+```
+
 ### Chat channels:
 
 `public-chat` - TODO
@@ -22,7 +93,7 @@ In example:
         "volatility":0.06
       }
     },
-    "country": "un",    //un stands for unknown 
+    "country": "un",    //un stands for unknown
     "professional": 0,
     "ui_class": "provisional"
   },
@@ -93,6 +164,35 @@ Out example:
 
 `game-connect` - TODO
 `game-disconnect` - TODO
+
+`game-chat` - Two-way channel for in-game chat.
+In example:
+```javascript
+{
+    "payload": {
+        "channel":"main",
+        "line": {
+            "date":1512421853,
+            "move_number":0,
+            "player_id":478486,
+            "username":"mytestusername",
+            "ranking":8,
+            "ratings": {
+                "overall": {
+                    "deviation":252.6,
+                    "rating":1337.5,
+                    "volatility":0.059995,
+                    "games_played":1
+                    }
+                },
+            "professional":0,
+            "ui_class":"timeout provisional",
+            "body":"hello",
+            "chat_id":"9cb1dbe0-d937-11e7-b25a-b9f1df96e26e"
+        }
+    },
+    "game_id": "123123"
+```
 
 `game-gamedata` - Sent when initializing the game, contains rules and other
 information:

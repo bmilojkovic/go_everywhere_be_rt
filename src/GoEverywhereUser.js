@@ -57,7 +57,7 @@ class User {
     let geMessage = {
       from: geAccount,
       to: null,
-      message: payload["message"] //TODO: message encoding
+      message: payload.message
     };
 
     this.geSio.emit('chat-message', geMessage);
@@ -216,6 +216,9 @@ class User {
   }
 
   registerGameChannels(game_id) {
+    this.ogsSio.emit('chat/join', {channel: `game-${game_id}`})
+    this.ogsSio.on(`game/${game_id}/chat`, (payload) => this.geSio.emit('game-chat', {payload, game_id}));
+
     this.ogsSio.on(`game/${game_id}/gamedata`, (payload) => this.geSio.emit('game-gamedata', { payload, game_id }));
     this.ogsSio.on(`game/${game_id}/clock`, (payload) => this.geSio.emit('game-clock', { payload, game_id }));
     this.ogsSio.on(`game/${game_id}/move`, (payload) => this.geSio.emit('game-move', { payload, game_id }));
@@ -233,6 +236,7 @@ class User {
     this.ogsSio.off(`game/${game_id}/reset-chats`);
     this.ogsSio.off(`game/${game_id}/undo_requested`);
     this.ogsSio.off(`game/${game_id}/undo_accepted`);
+    this.ogsSio.off(`game/${game_id}/chat`);
   }
 
   registerForChat(channel) {
