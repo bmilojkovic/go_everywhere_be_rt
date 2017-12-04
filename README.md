@@ -8,6 +8,86 @@
 
 `chat` - used for chatting with channels (e.g. _English_ or _Offtopic_)
 `private-chat` - used for sending private (one-on-one) messages
+In example:
+```javascript
+{
+  "from": {
+    "id": 483521,
+    "username": "VukBozovic",
+    "ranking": 0,
+    "ratings": {
+      "overall": {
+        "ui_class":"provisional",
+        "deviation":350,
+        "volatility":0.06
+      }
+    },
+    "country": "un",    //un stands for unknown 
+    "professional": 0,
+    "ui_class": "provisional"
+  },
+  "to": {
+    "id": 479259,
+    "username": "peradetlic"
+  },
+  "message": {
+    "i": "15v7.1",
+    "t": 1512408949,
+    "m": "Alo"
+  }
+}
+```
+Out example
+
+```javascript
+
+{
+  "player_id": 483521,
+  "username": "Vuk Bozovic",
+  "message": "Test message"
+}
+
+```
+`public-chat` - used for sending and receiving messages
+
+In example:
+
+```javascript
+{
+  "id": 85719,
+  "username": "KoBa the Amazing Glitterbutt",
+  "ranking": 26,
+  "ratings": {
+    "overall": {
+      "deviation": 80.23111903941287,
+      "rating": 1999.407831633357,
+      "volatility": 0.06417318639641933,
+      "games_played": 866
+    }
+  },
+  "country": "_Pirate",
+  "professional": 0,
+  "ui_class": "supporter",
+  "channel": "global-english",
+  "message": {
+    "i": "MIZ.QcrP9PD",
+    "t": 1512408315,
+    "m": "#learnsomethingeveryday"
+  }
+  "type":"message" //here we differentiate between a message, a leave event and a join event
+}
+```
+
+
+Out example:
+```javascript
+{
+  "channel": "global-offtopic", //channel name to which we are sending
+  "uuid": "21mj.QcrP0aN", //god knows what
+  "message": "Message" //actual message
+}
+```
+
 
 ### Game channels:
 
