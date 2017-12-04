@@ -6,7 +6,7 @@
 
 ### Chat channels:
 
-`chat` - used for chatting with channels (e.g. _English_ or _Offtopic_)
+`public-chat` - TODO
 `private-chat` - used for sending private (one-on-one) messages
 In example:
 ```javascript
