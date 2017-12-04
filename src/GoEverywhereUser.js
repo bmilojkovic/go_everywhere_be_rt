@@ -109,8 +109,8 @@ class User {
 
     this.geSio.on('game-disconnect', (payload) => this.disconnectFromGame(payload));
     this.geSio.on('game-move', (payload) => this.ogsSio.emit('game/move', payload));
-    this.geSio.on('game-resign', (payload) => this.ogsSio.emit('game/resign', payload));
-    this.geSio.on('game-cancel', (payload) => this.ogsSio.emit('game/cancel', payload));
+    this.geSio.on('game-resign', (payload) => { this.ogsSio.emit('game/resign', payload); this.unregisterGameChannels(); });
+    this.geSio.on('game-cancel', (payload) => { this.ogsSio.emit('game/cancel', payload); this.unregisterGameChannels(); });
     this.geSio.on('game-undo-request', (payload) => this.ogsSio.emit('game/undo/request', payload));
     this.geSio.on('game-undo-accept', (payload) => this.ogsSio.emit('game/undo/accept', payload));
 
@@ -216,8 +216,8 @@ class User {
   }
 
   registerGameChannels(game_id) {
-    this.ogsSio.emit('chat/join', {channel: `game-${game_id}`})
-    this.ogsSio.on(`game/${game_id}/chat`, (payload) => this.geSio.emit('game-chat', {payload, game_id}));
+    this.ogsSio.emit('chat/join', { channel: `game-${game_id}` })
+    this.ogsSio.on(`game/${game_id}/chat`, (payload) => this.geSio.emit('game-chat', { payload, game_id }));
 
     this.ogsSio.on(`game/${game_id}/gamedata`, (payload) => this.geSio.emit('game-gamedata', { payload, game_id }));
     this.ogsSio.on(`game/${game_id}/clock`, (payload) => this.geSio.emit('game-clock', { payload, game_id }));
