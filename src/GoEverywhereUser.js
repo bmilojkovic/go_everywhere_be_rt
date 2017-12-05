@@ -131,6 +131,7 @@ class User {
   openChallenge(payload) {
     fetch('http://online-go.com/api/v1/challenges/', {
       mode: 'cors',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -183,6 +184,7 @@ class User {
 
     fetch(`http://online-go.com/api/v1/challenges/${payload.game_id}/accept`, {
       mode: 'cors',
+      credentials: 'include',
       headers: {
         'Accept': 'application/json'
       },
@@ -200,6 +202,7 @@ class User {
     // Cancel challenge on REST
     fetch(`http://online-go.com/api/v1/challenges/${payload.challenge_id}`, {
       mode: 'cors',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application.json',
         'Accept': 'application/json'
