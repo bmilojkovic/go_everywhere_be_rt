@@ -47,7 +47,8 @@ var authenticate = (username, password) => {
       var userId = response1.data['id']
       return request('GET', "http://online-go.com/api/v1/ui/config", null, accessToken).then((configResponse) => {
         return {
-          userId: userId,
+          restToken: accessToken,
+          userId,
           chatAuth: configResponse.data['chat_auth'],
           incidentAuth: configResponse.data['incident_auth'],
           notificationAuth: configResponse.data['notification_auth'],
