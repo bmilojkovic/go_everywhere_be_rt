@@ -69,13 +69,25 @@ class User {
     this.ogsSio.on('chat-join', (payload) => this.handlePublicMessage('join', payload)); // when another user joins any chat channel we will get notified
 
     // Send private messages to the appropriate channel
-    this.ogsSio.on('private-message', (payload) => this.geSio.emit('private-chat', payload));
+    this.ogsSio.on('private-message', (payload) => {
+      this.ogsSio.emit('user/monitor', [payload.from.id]);
+      this.geSio.emit('private-chat', payload);
+    });
 
     this.geSio.on('public-chat', (payload) => this.ogsSio.emit('chat/send', { ...payload, uuid: generateUUID() }));
 
     // TODO :Maybe drop generateGUID and just use "asd.1" :\
     // NOTE: "uid" is not a typo
-    this.geSio.on('private-chat', (payload) => this.ogsSio.emit('chat/pm', { ...payload, uid: generateUUID() }));
+    this.geSio.on('private-chat', (payload) => {
+      payload = {
+        ...payload,
+        uid: "asd." + Math.floor(Math.random() * 100)
+      }
+      console.log('Emitting:');
+      console.log(payload);
+      this.ogsSio.emit('chat/pm', payload,
+      (response) => {console.log(response); this.geSio.emit('private-chat', response)});
+    });
 
     this.joinChats();
   }

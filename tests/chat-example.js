@@ -1,4 +1,5 @@
-const socket = require('socket.io-client')('http://localhost:4700');
+const socketOne = require('socket.io-client')('http://localhost:4700');
+const socketTwo = require('socket.io-client')('http://localhost:4700');
 var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
@@ -57,38 +58,37 @@ var authenticate = (username, password) => {
       });
     });
   })
-      .catch((error) => {
-        console.log(error);
-      });
+    .catch((error) => {
+      console.log(error);
+    });
 }
 
-//socket.on('testing', (payload) => console.log(payload));
-//socket.on('chat', (payload) => console.log(payload))
-
-socket.on('public-chat', (payload) => console.log(payload));
-socket.on('private-chat', (payload) => console.log(payload));
-socket.on('connect', () => {
+socketOne.on('private-chat', (payload) => console.log(`peradetlic received message "${payload.message.m}" from user ${payload.from.username}`));
+socketOne.on('connect', () => {
   authenticate('peradetlic', 'qweqwe').then((userData) => {
     console.log(userData);
-    socket.emit('authenticate', userData);
+    socketOne.emit('authenticate', userData);
+    setInterval(
+      () => socketOne.emit('private-chat', {
+        player_id: 478487,
+        username: "mytestusername",
+        message:  new String(Math.floor(Math.random() * 1000))
+      }),
+      2000)
   });
 });
-var sendPrivateMessage = function(reciverId, reciverUsername, message)
-{
-  socket.emit('private-chat', {player_id: reciverId, username: reciverUsername, message: message});
-}
 
-setInterval(() => {
-  sendPrivateMessage(478487,'mytestusername', Math.floor(Math.random() * 1000));
-}, 5000);
-
-
-socket.on('game-gamedata', (payload) => console.log(payload));
-socket.on('game-clock', (payload) => console.log(payload));
-socket.on('game-move', (payload) => console.log(payload));
-socket.on('game-conditional-moves', (payload) => console.log(payload));
-socket.on('game-reset-chats', (payload) => console.log(payload));
-socket.on('game-undo-requested', (payload) => console.log(payload));
-socket.on('game-undo-accepted', (payload) => console.log(payload));
-socket.on('active-game', (payload) => console.log(payload));
-socket.on('seekgraph-global', (payload) => console.log(payload));
+socketTwo.on('private-chat', (payload) => console.log(`mytestusername received message "${payload.message.m}" from user ${payload.from.username}`));
+socketTwo.on('connect', () => {
+  authenticate('mytestusername', 'dusan4323').then((userData) => {
+    console.log(userData);
+    socketTwo.emit('authenticate', userData);
+    setInterval(
+      () => socketTwo.emit('private-chat', {
+        player_id: 479259,
+        username: "peradetlic",
+        message:  new String(Math.floor(Math.random() * 1000))
+      }),
+      2000);
+  });
+});
