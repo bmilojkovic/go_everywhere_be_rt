@@ -1,5 +1,3 @@
-import { clearInterval } from 'timers';
-
 const SocketIOClient = require('socket.io-client');
 const generateUUID = require('uuid/v1');
 
@@ -33,7 +31,7 @@ class User {
     this.setUpChats();
     this.registerOGSListener();
     this.registerGEListeners();
-    this.mainLogic();
+    this.ogsInit();
   }
 
   fooBar(payload) {
@@ -210,6 +208,9 @@ class User {
     })
       .then(() => this.unregisterGameChannels());
 
+    /**
+     * If we are currently polling "challenge/keepalive", disable it
+     */
     if (this.activeChallenges[payload.challenge_id]) {
       clearInterval(this.activeChallenges[payload.challenge_id]);
     }
@@ -250,8 +251,10 @@ class User {
     this.joinedChats.forEach(this.registerForChat.bind(this));
   }
 
-
-  mainLogic() {
+  /**
+   * Initialize the client socket towards OGS.
+   */
+  ogsInit() {
     this.ogsSio.emit('hostinfo');
 
     this.ogsSio.emit('ui-pushes/subscribe', { channel: "announcements" });
