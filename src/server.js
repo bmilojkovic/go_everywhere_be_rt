@@ -29,5 +29,5 @@ server.listen(PORT, () => console.log(`Server up on port ${PORT}`));
 io.on('connection', (socket) => console.log(`New user connected: ${socket.request.connection.remoteAddress}`));
 
 io.on('connection', (socket) =>
-  socket.on('auth', (payload) => activeUsers.ogs[payload.id].init(socket))
+  socket.on('auth', (payload) => activeUsers.ogs[payload.userId].init(socket))
 );
