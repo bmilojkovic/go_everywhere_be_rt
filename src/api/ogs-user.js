@@ -16,22 +16,24 @@ const handlePing = (socket) => {
 
 class User {
 
-  constructor(geSio, userData) {
-    console.log('some idiot actually connected lmao');
-    this.geSio = geSio;
+  constructor(userData) {
     this.userData = userData;
-    this.ogsSio = SocketIOClient(ogsUrl, ogsClientConfig);
 
     //default joined chats
     this.joinedChats = ['english', 'offtopic'];
 
     this.activeChallenges = {};
+  }
+
+  init(geSio) {
+    this.geSio = geSio;
+    this.ogsSio = SocketIOClient(ogsUrl, ogsClientConfig);
 
     this.handleDisconnect();
     this.setUpChats();
     this.registerOGSListener();
     this.registerGEListeners();
-    this.ogsInit();
+    this.ogsHandshake();
   }
 
   fooBar(payload) {
@@ -269,7 +271,7 @@ class User {
   /**
    * Initialize the client socket towards OGS.
    */
-  ogsInit() {
+  ogsHandshake() {
     this.ogsSio.emit('hostinfo');
 
     this.ogsSio.emit('ui-pushes/subscribe', { channel: "announcements" });
