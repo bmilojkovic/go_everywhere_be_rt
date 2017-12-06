@@ -5,6 +5,8 @@ var cors = require('cors');
 var morgan = require('morgan');
 var socketIO = require('socket.io');
 
+const OGSUser = require('./api/ogs-user');
+
 var rest_routes = require('./rest-router');
 
 /* App configuration */
@@ -28,6 +30,9 @@ server.listen(PORT, () => console.log(`Server up on port ${PORT}`));
 
 io.on('connection', (socket) => console.log(`New user connected: ${socket.request.connection.remoteAddress}`));
 
-io.on('connection', (socket) =>
-  socket.on('auth', (payload) => activeUsers.ogs[payload.userId].init(socket))
-);
+io.on('connection', (socket) => {
+  socket.on('auth', (payload) =>{
+    activeUsers.ogs[payload.userId] = new OGSUser(payload);
+    activeUsers.ogs[payload.userId].init(socket)
+  });
+});

@@ -63,7 +63,7 @@ var authenticate = (username, password) => {
     });
 }
 
-socketOne.on('private-chat', (payload) => console.log(`peradetlic received message "${payload.message.m}" from user ${payload.from.username}`));
+/*socketOne.on('private-chat', (payload) => console.log(`peradetlic received message "${payload.message.m}" from user ${payload.from.username}`));
 socketOne.on('connect', () => {
   authenticate('peradetlic', 'qweqwe').then((userData) => {
     console.log(userData);
@@ -76,13 +76,13 @@ socketOne.on('connect', () => {
       }),
       2000)
   });
-});
+});*/
 
-socketTwo.on('private-chat', (payload) => console.log(`mytestusername received message "${payload.message.m}" from user ${payload.from.username}`));
-socketTwo.on('connect', () => {
+/*socketTwo.on('private-chat', (payload) => console.log(`mytestusername received message "${payload.message.m}" from user ${payload.from.username}`));
+socketTwo.on('connection', () => {
   authenticate('mytestusername', 'dusan4323').then((userData) => {
     console.log(userData);
-    socketTwo.emit('authenticate', userData);
+    socketTwo.emit('auth', userData);
     setInterval(
       () => socketTwo.emit('private-chat', {
         player_id: 479259,
@@ -91,4 +91,34 @@ socketTwo.on('connect', () => {
       }),
       2000);
   });
+});*/
+
+socketOne.on('private-chat', (payload) => console.log(`peradetlic received message "${payload.message.m}" from user ${payload.from.username}`));
+authenticate('peradetlic', 'qweqwe').then((userData) => {
+  console.log(userData);
+  socketOne.emit('auth', userData);
+  setInterval(
+      () => socketOne.emit('private-chat', {
+        player_id: 478486,
+        username: "mytestusername",
+        message:  "Pera "+new String(Math.floor(Math.random() * 1000))
+      }),
+      2000);
 });
+
+
+socketTwo.on('private-chat', (payload) => console.log(`mytestusername received message "${payload.message.m}" from user ${payload.from.username}`));
+authenticate('mytestusername', 'dusan4323').then((userData) => {
+  console.log(userData);
+  socketTwo.emit('auth', userData);
+  setInterval(
+      () => socketTwo.emit('private-chat', {
+        player_id: 479259,
+        username: "peradetlic",
+        message:  "Test "+new String(Math.floor(Math.random() * 1000))
+      }),
+      2000);
+});
+
+
+
