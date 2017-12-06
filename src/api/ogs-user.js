@@ -1,5 +1,6 @@
 const SocketIOClient = require('socket.io-client');
 const generateUUID = require('uuid/v1');
+const fetch = require('node-fetch');
 
 const ogsUrl = "https://online-go.com";
 const ogsClientConfig = {
@@ -88,7 +89,7 @@ class User {
       console.log('Emitting:');
       console.log(payload);
       this.ogsSio.emit('chat/pm', payload,
-      (response) => {console.log(response); this.geSio.emit('private-chat', response)});
+        (response) => { console.log(response); this.geSio.emit('private-chat', response) });
     });
 
     this.joinChats();
@@ -115,9 +116,6 @@ class User {
   }
 
   registerGEListeners() {
-    this.geSio.on('challenge-accept', (payload) => this.acceptChallenge(payload));
-    this.geSio.on('challenge-create', (payload) => this.openChallenge(payload));
-    this.geSio.on('challenge-cancel', (payload) => this.cancelChallenge(payload));
 
     this.geSio.on('game-disconnect', (payload) => this.disconnectFromGame(payload));
     this.geSio.on('game-move', (payload) => this.ogsSio.emit('game/move', payload));
@@ -143,7 +141,7 @@ class User {
   }
 
   openChallenge(payload) {
-    fetch('http://online-go.com/api/v1/challenges/', {
+    return fetch('http://online-go.com/api/v1/challenges/', {
       mode: 'cors',
       credentials: 'include',
       headers: {
@@ -151,11 +149,11 @@ class User {
         'Accept': 'application/json'
       },
       method: 'POST',
+      // TODO token
       body: JSON.stringify(payload)
     })
       .then(response => response.json())
-      .then(
-      (data) => {
+      .then(data => {
         console.log(data);
         let challenge_data = {
           challenge_id: data.challenge,
@@ -185,31 +183,25 @@ class User {
           }
         });
       }
-      )
+      );
   }
 
-  acceptChallenge(payload) {
-    if (!payload.hasOwnProperty('game_id')) {
-      return false;
-    }
+  acceptChallenge(game_id) {
+    //////////////////////////////////////////////
+    ogsSio.emit('game/connect', {/* TODO */ });
+    /////////////////////////////////////////////
 
-    let game_id = payload.game_id;
-    ogsSio.emit('game/connect', payload);
+    // TODO register game listeners
 
-    fetch(`http://online-go.com/api/v1/challenges/${payload.game_id}/accept`, {
+    // Propagate promise back to REST controller
+    return fetch(`http://online-go.com/api/v1/challenges/${payload.game_id}/accept`, {
       mode: 'cors',
       credentials: 'include',
       headers: {
         'Accept': 'application/json'
       },
       method: 'POST'
-    })
-      .then(response => response.json())
-      .then(
-      (data) => {
-        console.log(data);
-      }
-      )
+    });
   }
 
   cancelChallenge(payload) {
