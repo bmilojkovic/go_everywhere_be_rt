@@ -26,7 +26,7 @@ router.get('/:serverID/lobby/all',(request,response)=>{
       chats,
       active_games,
       open_games
-    }
+    };
     var rooms = [];
     rooms.push(onlyRoom);
 
@@ -34,7 +34,7 @@ router.get('/:serverID/lobby/all',(request,response)=>{
     var lobby={
       id: null,
       rooms,
-    }
+    };
 
     response.json(lobby).status(200).send();
 
@@ -51,8 +51,27 @@ router.get('/server/:serverID/acc/:accID/lobby/:lobbyID/rooms-to-join',(request,
   var accID = request.params.accID;
   var lobbyID = request.params.lobbyID;
 
+  var user = activeUsers.ogs[accID]; //Getting our user ???
+
   if(serverID == 'OGS'){
 
+
+    var chats = ['global-english']; //add more chats here
+
+    var active_games=[];  //relate to OGS rt api for games
+    var open_games=[];  // this ??
+
+    var onlyRoom = {
+      id: null,
+      chats,
+      active_games,
+      open_games
+    };
+    var rooms = [];
+    rooms.push(onlyRoom);
+
+
+    response.json(rooms).status(200).send();
 
   }else{
     response.status(404).json({message:"No such server"}).send();
@@ -68,6 +87,8 @@ router.get('/server/:serverID/acc/:accID/lobby/:lobbyID:/joined-rooms',(request,
   var lobbyID = request.params.lobbyID;
 
   if(serverID == 'OGS'){
+
+
 
 
   }else{
