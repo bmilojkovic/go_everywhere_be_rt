@@ -117,6 +117,7 @@ router.post('/auth', (request, response) => {
 
   var newUser = new OGSUser(payload);
   activeUsers.ogs[payload.userId] = newUser;
+  response.status(200).json({userID:payload.userID}).send(); //returning userID so the accID in the next rest calls will be the actual userID assigned
 });
 
 function applyRoutes(app) {
