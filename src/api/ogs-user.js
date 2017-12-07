@@ -156,12 +156,14 @@ class User {
       .then(response => response.json())
       .then(data => {
         console.log(data);
+
+        // Don't use destructuring here, we use this format for polling keepalive
         let challenge_data = {
           challenge_id: data.challenge,
           game_id: data.game
         }
 
-        this.registerGameChannels();
+        this.registerGameChannels(challenge_data.game_id);
         this.ogsSio.emit('game/connect', {
           game_id: challenge_data.game_id,
           player_id: this.userData.userId,
@@ -173,6 +175,7 @@ class User {
           1000
         );
 
+        // TODO ovde zavrsi logiku za otvaranje igre
         this.ogsSio.on('notification', (payload) => {
           if (payload.type === 'gameStarted' &&
             payload.game_id === challenge_data.game_id) {
@@ -187,12 +190,16 @@ class User {
       );
   }
 
-  acceptChallenge(game_id) {
-    //////////////////////////////////////////////
-    ogsSio.emit('game/connect', {/* TODO */ });
-    /////////////////////////////////////////////
+  acceptChallenge(payload) {
+    const { game_id, challenge_id } = payload;
 
-    // TODO register game listeners
+    this.registerGameChannels(game_id);
+
+    ogsSio.emit('game/connect', {
+      game_id,
+      challenge_id,
+      player_id: this.userData.userId
+    });
 
     // Propagate promise back to REST controller
     return fetch(`http://online-go.com/api/v1/challenges/${payload.game_id}/accept`, {
@@ -208,8 +215,19 @@ class User {
   }
 
   cancelChallenge(payload) {
+
+    const {game_id, challenge_id} = payload;
     // Cancel challenge on REST
-    fetch(`http://online-go.com/api/v1/challenges/${payload.challenge_id}`, {
+    this.unregisterGameChannels(game_id);
+
+    /**
+     * If we are currently polling "challenge/keepalive", disable it
+     */
+    if (this.activeChallenges[challenge_id]) {
+      clearInterval(this.activeChallenges[challenge_id]);
+    }
+
+    return fetch(`http://online-go.com/api/v1/challenges/${challenge_id}`, {
       mode: 'cors',
       credentials: 'include',
       headers: {
@@ -218,15 +236,9 @@ class User {
         'Authorization': `Bearer ${this.userData.restToken}`
       },
       method: 'DELETE'
-    })
-      .then(() => this.unregisterGameChannels());
+    });
 
-    /**
-     * If we are currently polling "challenge/keepalive", disable it
-     */
-    if (this.activeChallenges[payload.challenge_id]) {
-      clearInterval(this.activeChallenges[payload.challenge_id]);
-    }
+
   }
 
   registerGameChannels(game_id) {
