@@ -178,10 +178,11 @@ class User {
         this.ogsSio.on('notification', (payload) => {
           if (payload.type === 'gameStarted' &&
             payload.game_id === challenge_data.game_id) {
-            clearInterval(keepaliveNodeID);
+            clearInterval(this.activeChallenges[challenge_data.challenge_id]);
             this.geSio.emit('challenge-accept', {
               ...challenge_data,
-              player_id: payload.player_id
+              white: payload.white,
+              black: payload.black
             });
           }
         });
