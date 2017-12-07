@@ -218,6 +218,8 @@ class User {
 
   cancelChallenge(game_id, challenge_id) {
 
+    this.ogsSio.emit('game/disconnect', {game_id});
+
     // Cancel challenge on REST
     this.unregisterGameChannels(game_id);
 
