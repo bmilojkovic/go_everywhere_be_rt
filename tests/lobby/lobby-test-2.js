@@ -101,8 +101,13 @@ var openGame = {
 // socketOne.on('seekgraph-global',(payload)=> console.log(payload));
 socketOne.on('challenge-accept', payload => console.log(payload));
 
+
+
 authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
 
+  console.log('User data aquired through OGS REST: \n'+JSON.stringify(firstUserData));
+
+  console.log('Request to authenticate ');
   fetch('http://localhost:4700/api/auth', {
     headers: {
       'Content-Type': 'application/json',
@@ -114,6 +119,13 @@ authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
     if (response.status !== 200) {
       console.log('Greska u autentifikaciji sa expres-om!');
     } else {
+
+      console.log('Response from auth endpoint: \n'+JSON.stringify(response));
+
+      console.log('Emiting to socket channel "auth":\n'+JSON.stringify({
+        userId: firstUserData.userId
+      }));
+
       socketOne.emit('auth', {
         userId: firstUserData.userId
       });
@@ -125,6 +137,9 @@ authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
         server: "ogs",
         room: "ogs"
       }
+
+      console.log('Request to create challange: \n'+JSON.stringify(body));
+
       fetch('http://localhost:4700/api/challenge/create', {
         headers: {
           'Content-Type': 'application/json',
@@ -135,6 +150,19 @@ authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
       })
         .then(response => response.json())
         .then(gameResponse => {
+
+          console.log('Response from creating challange endpoint :\n'+JSON.stringify(gameResponse));
+
+          console.log('Request to cancel the challenge: '+JSON.stringify({
+            server: "ogs",
+            lobby: "ogs",
+            room: "ogs",
+            account: firstUserData.userId,
+            game_id: gameResponse.game,
+            challenge_id: gameResponse.challenge
+          }));
+
+
           fetch('http://localhost:4700/api/challenge/cancel', {
             headers: {
               'Content-Type': 'application/json',
@@ -151,7 +179,7 @@ authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
             })
           })
           .then(response => response.json())
-          .then((response) => console.log(response));
+          .then((response) => console.log("Response from cancel: \n"+JSON.stringify(response)));
         });
     }
   });

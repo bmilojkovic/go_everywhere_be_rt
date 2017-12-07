@@ -105,6 +105,10 @@ socketTwo.on('challenge-accept', payload => console.log(payload));
 
 authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
 
+  console.log('User data aquired through OGS REST for User 1: \n'+JSON.stringify(firstUserData));
+
+  console.log('Request to authenticate User1 1');
+
   fetch('http://localhost:4700/api/auth', {
     headers: {
       'Content-Type': 'application/json',
@@ -116,6 +120,11 @@ authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
     if (response.status !== 200) {
       console.log('Greska u autentifikaciji sa expres-om!');
     } else {
+
+      console.log('Emiting to socket channel for User1: \n'+JSON.stringify({
+        userId: firstUserData.userId
+      }));
+
       socketOne.emit('auth', {
         userId: firstUserData.userId
       });
@@ -127,6 +136,9 @@ authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
         server: "ogs",
         room: "ogs"
       }
+
+      console.log('Request to create a challange: \n'+JSON.stringify(body));
+
       fetch('http://localhost:4700/api/challenge/create', {
         headers: {
           'Content-Type': 'application/json',
@@ -139,6 +151,9 @@ authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
         .then(gameResponse => {
           authenticate('peradetlic', 'qweqwe').then((secondUserData) => {
 
+            console.log('User data aquired through OGS REST for User 2'+JSON.stringify(secondUserData));
+
+            console.log('Request to authenticate User 2');
             fetch('http://localhost:4700/api/auth', {
               headers: {
                 'Content-Type': 'application/json',
@@ -150,9 +165,16 @@ authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
               if (response.status !== 200) {
                 console.log('Greska u autentifikaciji sa expres-om!');
               } else {
+
+                console.log('Emiting to socket channel for User2: \n'+JSON.stringify({
+                  userId: secondUserData.userId
+                }));
+
                 socketTwo.emit('auth', {
                   userId: secondUserData.userId
                 });
+
+                console.log('User 2 accepts the challange: \n')
 
                 fetch('http://localhost:4700/api/challenge/accept', {
                   headers: {
@@ -170,7 +192,7 @@ authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
                   })
                 })
                   .then(response => response.json())
-                  .then(response => console.log(response));
+                  .then(response => console.log('Accepting challange response:\n'+JSON.stringify(response)));
               }
             });
           });
