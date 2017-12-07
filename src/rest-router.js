@@ -27,7 +27,7 @@ router.post('/auth', (request, response) => {
     }
   }
 
-  var newUser = new OGSUser(payload);
+  const newUser = new OGSUser(payload);
   activeUsers.ogs[payload.userId] = newUser;
 });
 
