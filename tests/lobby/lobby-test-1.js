@@ -137,66 +137,44 @@ authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
       })
         .then(response => response.json())
         .then(gameResponse => {
-          // console.log(gameResponse);
-          // authenticate('peradetlic', 'qweqwe').then((secondUserData) => {
+          authenticate('peradetlic', 'qweqwe').then((secondUserData) => {
 
-          //     fetch('http://localhost:4700/api/auth', {
-          //       headers: {
-          //         'Content-Type': 'application/json',
-          //         'Accept': 'application/json'
-          //       },
-          //       method: 'POST',
-          //       body: JSON.stringify(secondUserData)
-          //     }).then((response) => {
-          //       if (response.status !== 200) {
-          //         console.log('Greska u autentifikaciji sa expres-om!');
-          //       } else {
-          //         socketTwo.emit('auth', {
-          //           userId: secondUserData.userId
-          //         });
+            fetch('http://localhost:4700/api/auth', {
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              method: 'POST',
+              body: JSON.stringify(secondUserData)
+            }).then((response) => {
+              if (response.status !== 200) {
+                console.log('Greska u autentifikaciji sa expres-om!');
+              } else {
+                socketTwo.emit('auth', {
+                  userId: secondUserData.userId
+                });
 
-          //         fetch('http://localhost:4700/api/challenge/accept', {
-          //           headers: {
-          //             'Content-Type': 'application/json',
-          //             'Accept': 'application/json'
-          //           },
-          //           method: 'POST',
-          //           body: JSON.stringify({
-          //             server: "ogs",
-          //             room: "ogs",
-          //             lobby: "ogs",
-          //             account: secondUserData.userId,
-          //             game: gameResponse.game,
-          //             challenge: gameResponse.challenge
-          //           })
-          //         })
-          //         .then(response => response.json())
-          //         .then(response => console.log(response));
-          //       }
-          //     });
-
-          //   });
-          fetch('http://localhost:4700/api/challenge/cancel', {
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            method: 'POST',
-            body: JSON.stringify({
-              server: "ogs",
-              lobby: "ogs",
-              room: "ogs",
-              account: firstUserData.userId,
-              game_id: gameResponse.game,
-              challenge_id: gameResponse.challenge
-            })
-          })
-          .then(response => response.json())
-          .then((response) => console.log(response));
-
-
+                fetch('http://localhost:4700/api/challenge/accept', {
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                  },
+                  method: 'POST',
+                  body: JSON.stringify({
+                    server: "ogs",
+                    room: "ogs",
+                    lobby: "ogs",
+                    account: secondUserData.userId,
+                    game: gameResponse.game,
+                    challenge: gameResponse.challenge
+                  })
+                })
+                  .then(response => response.json())
+                  .then(response => console.log(response));
+              }
+            });
+          });
         });
     }
   });
-
 });
