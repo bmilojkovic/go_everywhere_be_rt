@@ -8,7 +8,7 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var axios = require('axios');
 var qs = require('qs');
-const fetch=require('node-fetch');
+const fetch = require('node-fetch');
 
 
 var request = function (method, uri, d = null, token = '') {
@@ -60,9 +60,9 @@ var authenticate = (username, password) => {
       });
     });
   })
-      .catch((error) => {
-        console.log(error);
-      });
+    .catch((error) => {
+      console.log(error);
+    });
 }
 
 
@@ -99,42 +99,50 @@ var openGame = {
 };
 
 
-socketOne.on('seekgraph-global',(payload)=> console.log(payload));
+// socketOne.on('seekgraph-global',(payload)=> console.log(payload));
+socketOne.on('challenge-accept', payload => console.log(payload));
 //socketOne.on('connection',()=>{
 
-  authenticate('mytestusername','dusan4323').then((userData)=>{
+authenticate('mytestusername', 'dusan4323').then((userData) => {
 
-    console.log(userData);
+  console.log(userData);
 
-    /*fetch('http://localhost:4700/api/challenge/create',{
-      mode: 'cors',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+
+  fetch('http://localhost:4700/api/auth', {
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    method: 'POST',
+    body: JSON.stringify(userData)
+  }).then((response) => {
+    if (response.status !== 200) {
+      console.log('Greska u autentifikaciji sa expres-om!');
+    } else {
+      socketOne.emit('auth', {
+        userId: userData.userId
+      });
+
+      let body = {
+        game: openGame,
+        account: userData.userId,
+        lobby: "ogs",
+        server: "ogs",
+        room: "ogs"
       }
-
-    });*/
-
-    fetch('http://localhost:4700/api/auth',{
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      method: 'POST',
-      body: JSON.stringify(userData)
-    }).then((response)=>{
-      if(response.status !== 200){
-        console.log('Greska u autentifikaciji sa expres-om!');
-      }else{
-        socketOne.emit('auth',{
-          userId: userData.userId
-        });
-      }
-    });
-
+      fetch('http://localhost:4700/api/challenge/create', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify(body)
+      })
+      .then(response => response.json())
+      .then(response => console.log(response));
+    }
   });
 
+});
+
 //});
-
-

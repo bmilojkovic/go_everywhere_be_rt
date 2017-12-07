@@ -141,7 +141,7 @@ class User {
   }
 
   openChallenge(payload) {
-    return fetch('http://online-go.com/api/v1/challenges/', {
+    return fetch('https://online-go.com/api/v1/challenges/', {
       mode: 'cors',
       credentials: 'include',
       headers: {
@@ -150,7 +150,6 @@ class User {
         'Authorization': `Bearer ${this.userData.restToken}`
       },
       method: 'POST',
-      // TODO token
       body: JSON.stringify(payload)
     })
       .then(response => response.json())
@@ -186,8 +185,10 @@ class User {
             });
           }
         });
-      }
-      );
+        return data;
+      })
+
+      .catch(error => console.log(error));
   }
 
   acceptChallenge(payload) {
