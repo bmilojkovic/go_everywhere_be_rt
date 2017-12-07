@@ -1,5 +1,5 @@
 const socketOne = require('socket.io-client')('http://localhost:4700');
-const socketTwo = require('socket.io-client')('http://localhost:4700');
+//const socketTwo = require('socket.io-client')('http://localhost:4700');
 var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
@@ -8,6 +8,8 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var axios = require('axios');
 var qs = require('qs');
+const fetch=require('node-fetch');
+
 
 var request = function (method, uri, d = null, token = '') {
   if (!method) {
@@ -63,34 +65,76 @@ var authenticate = (username, password) => {
       });
 }
 
-/*socketOne.on('private-chat', (payload) => console.log(`peradetlic received message "${payload.message.m}" from user ${payload.from.username}`));
-socketOne.on('connect', () => {
-  authenticate('peradetlic', 'qweqwe').then((userData) => {
-    console.log(userData);
-    socketOne.emit('authenticate', userData);
-    setInterval(
-        () => socketOne.emit('private-chat', {
-          player_id: 478487,
-          username: "mytestusername",
-          message:  new String(Math.floor(Math.random() * 1000))
-        }),
-        2000)
-  });
-});
 
-socketTwo.on('private-chat', (payload) => console.log(`mytestusername received message "${payload.message.m}" from user ${payload.from.username}`));
-socketTwo.on('connect', () => {
-  authenticate('mytestusername', 'dusan4323').then((userData) => {
+var openGame = {
+  "initialized": false,
+  "min_ranking": -1000,
+  "max_ranking": 1000,
+  "challenger_color": "automatic",
+  "game": {
+    "handicap": 0,
+    "time_control": "fischer",
+    "challenger_color": "white",
+    "rules": "japanese",
+    "ranked": false,
+    "width": 9,
+    "height": 9,
+    "komi_auto": "custom",
+    "komi": 5.5,
+    "disable_analysis": false,
+    "pause_on_weekends": false,
+    "initial_state": null,
+    "private": false,
+    "name": "Test Game don't join !",
+    "time_control_parameters": {
+      "system": "fischer",
+      "speed": "live",
+      "initial_time": 3600,
+      "time_increment": 1800,
+      "max_time": 3600,
+      "pause_on_weekends": false,
+      "time_control": "fischer"
+    }
+  }
+};
+
+
+socketOne.on('seekgraph-global',(payload)=> console.log(payload));
+//socketOne.on('connection',()=>{
+
+  authenticate('mytestusername','dusan4323').then((userData)=>{
+
     console.log(userData);
-    socketTwo.emit('authenticate', userData);
-    setInterval(
-        () => socketTwo.emit('private-chat', {
-          player_id: 479259,
-          username: "peradetlic",
-          message:  new String(Math.floor(Math.random() * 1000))
-        }),
-        2000);
+
+    /*fetch('http://localhost:4700/api/challenge/create',{
+      mode: 'cors',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+
+    });*/
+
+    fetch('http://localhost:4700/api/auth',{
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      method: 'POST',
+      body: JSON.stringify(userData)
+    }).then((response)=>{
+      if(response.status !== 200){
+        console.log('Greska u autentifikaciji sa expres-om!');
+      }else{
+        socketOne.emit('auth',{
+          userId: userData.userId
+        });
+      }
+    });
+
   });
-});*/
+
+//});
 
 

@@ -16,7 +16,7 @@ app.use(bodyParser.json());
 // middleware for parsing Content-Type: application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }));
 // logger middleware
-app.use(morgan('combined'));
+//app.use(morgan('combined'));
 
 /* Add routes */
 rest_routes(app);

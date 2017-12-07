@@ -12,6 +12,9 @@ router.post('/', (request, response) => response.json({message: request.body}));
 router.post('/auth', (request, response) => {
   let payload = request.body;
 
+  //console.log(request);
+  //console.log(request.body);
+
   const requiredFields = [
     'restToken',
     'username',
@@ -22,10 +25,15 @@ router.post('/auth', (request, response) => {
   ];
   for (property in requiredFields) {
     if (!payload.hasOwnProperty(property)) {
+
+      //console.log(property);
+
       response.status(400).json({error: `missing property: "${property}"`});
       return;
     }
   }
+
+  console.log('---------------');
 
   const newUser = new OGSUser(payload);
   activeUsers.ogs[payload.userId] = newUser;
