@@ -146,7 +146,8 @@ class User {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${this.userData.restToken}`
       },
       method: 'POST',
       // TODO token
@@ -198,7 +199,9 @@ class User {
       mode: 'cors',
       credentials: 'include',
       headers: {
-        'Accept': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${this.userData.restToken}`
       },
       method: 'POST'
     });
@@ -211,7 +214,8 @@ class User {
       credentials: 'include',
       headers: {
         'Content-Type': 'application.json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${this.userData.restToken}`
       },
       method: 'DELETE'
     })
