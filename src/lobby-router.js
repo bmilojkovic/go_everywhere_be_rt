@@ -8,11 +8,9 @@ router.post('/accept', (request, response) => {
   let data = request.body;
 
   if (isOgs(data)) {
-    let user = activeUsers[data.account];
-
+    let user = activeUsers.ogs[data.account];
     user.acceptChallenge(data.game, data.challenge)
-      .then(ogsResponse => ogsResponse.json())
-      .then(body => response.json(body))
+      .then(body => response.json({message: 'success!'}))
 
       .catch(ogsResponse => response.status(400).json(ogsResponse.data));
   } else {
@@ -26,7 +24,6 @@ router.post('/create', (request, response) => {
 
   if (isOgs(data)) {
     let user = activeUsers.ogs[data.account];
-    console.log(data);
     user.openChallenge(data.game)
       .then(body => response.json(body))
       .catch(ogsResponse => response.status(400).json(ogsResponse.data));
@@ -39,9 +36,10 @@ router.post('/cancel', (request, response) => {
   let data = request.body;
 
   if (isOgs(data)) {
-    let user = activeUsers[data.account];
+    let user = activeUsers.ogs[data.account];
 
-    user.cancelChallenge({ game_id: data.game_id, challenge_id: data.challenge_id });
+    user.cancelChallenge(data.game_id, data.challenge_id)
+    .then(ogsResponse => response.json(ogsResponse));
   } else {
     response.status(403).json({ message: "You are trying to access an unknown server" });
   }

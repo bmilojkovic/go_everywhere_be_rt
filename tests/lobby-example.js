@@ -1,5 +1,5 @@
 const socketOne = require('socket.io-client')('http://localhost:4700');
-//const socketTwo = require('socket.io-client')('http://localhost:4700');
+const socketTwo = require('socket.io-client')('http://localhost:4700');
 var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
@@ -101,12 +101,9 @@ var openGame = {
 
 // socketOne.on('seekgraph-global',(payload)=> console.log(payload));
 socketOne.on('challenge-accept', payload => console.log(payload));
-//socketOne.on('connection',()=>{
+socketTwo.on('challenge-accept', payload => console.log(payload));
 
-authenticate('mytestusername', 'dusan4323').then((userData) => {
-
-  console.log(userData);
-
+authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
 
   fetch('http://localhost:4700/api/auth', {
     headers: {
@@ -114,18 +111,18 @@ authenticate('mytestusername', 'dusan4323').then((userData) => {
       'Accept': 'application/json'
     },
     method: 'POST',
-    body: JSON.stringify(userData)
+    body: JSON.stringify(firstUserData)
   }).then((response) => {
     if (response.status !== 200) {
       console.log('Greska u autentifikaciji sa expres-om!');
     } else {
       socketOne.emit('auth', {
-        userId: userData.userId
+        userId: firstUserData.userId
       });
 
       let body = {
         game: openGame,
-        account: userData.userId,
+        account: firstUserData.userId,
         lobby: "ogs",
         server: "ogs",
         room: "ogs"
@@ -139,10 +136,49 @@ authenticate('mytestusername', 'dusan4323').then((userData) => {
         body: JSON.stringify(body)
       })
       .then(response => response.json())
-      .then(response => console.log(response));
+      .then(gameResponse => {
+        console.log(gameResponse);
+        authenticate('peradetlic', 'qweqwe').then((secondUserData) => {
+
+            fetch('http://localhost:4700/api/auth', {
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              method: 'POST',
+              body: JSON.stringify(secondUserData)
+            }).then((response) => {
+              if (response.status !== 200) {
+                console.log('Greska u autentifikaciji sa expres-om!');
+              } else {
+                socketTwo.emit('auth', {
+                  userId: secondUserData.userId
+                });
+
+                fetch('http://localhost:4700/api/challenge/accept', {
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                  },
+                  method: 'POST',
+                  body: JSON.stringify({
+                    server: "ogs",
+                    room: "ogs",
+                    lobby: "ogs",
+                    account: secondUserData.userId,
+                    game: gameResponse.game,
+                    challenge: gameResponse.challenge
+                  })
+                })
+                .then(response => response.json())
+                .then(response => console.log(response));
+              }
+            });
+
+          });
+
+      });
     }
   });
 
 });
-
-//});

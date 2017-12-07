@@ -28,6 +28,7 @@ class User {
 
   init(geSio) {
     this.geSio = geSio;
+    console.log(`Creating OGS socket for ${this.userData.userId}`);
     this.ogsSio = SocketIOClient(ogsUrl, ogsClientConfig);
 
     this.handleDisconnect();
@@ -86,8 +87,6 @@ class User {
         ...payload,
         uid: "asd." + Math.floor(Math.random() * 100)
       }
-      console.log('Emitting:');
-      console.log(payload);
       this.ogsSio.emit('chat/pm', payload,
         (response) => { console.log(response); this.geSio.emit('private-chat', response) });
     });
@@ -154,7 +153,6 @@ class User {
     })
       .then(response => response.json())
       .then(data => {
-        console.log(data);
 
         // Don't use destructuring here, we use this format for polling keepalive
         let challenge_data = {
@@ -192,33 +190,34 @@ class User {
       .catch(error => console.log(error));
   }
 
-  acceptChallenge(payload) {
-    const { game_id, challenge_id } = payload;
+  acceptChallenge(game_id, challenge_id) {
 
     this.registerGameChannels(game_id);
 
-    ogsSio.emit('game/connect', {
+    this.ogsSio.emit('game/connect', {
       game_id,
       challenge_id,
       player_id: this.userData.userId
     });
 
     // Propagate promise back to REST controller
-    return fetch(`http://online-go.com/api/v1/challenges/${payload.game_id}/accept`, {
+    // `http://online-go.com/api/v1/challenges/${challenge_id}/accept`
+    return fetch(`https://online-go.com/api/v1/challenges/${challenge_id}/accept`, {
       mode: 'cors',
       credentials: 'include',
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
         'Authorization': `Bearer ${this.userData.restToken}`
       },
       method: 'POST'
+    })
+    .then(response => {
+      console.log(response);
+      return response;
     });
   }
 
-  cancelChallenge(payload) {
+  cancelChallenge(game_id, challenge_id) {
 
-    const {game_id, challenge_id} = payload;
     // Cancel challenge on REST
     this.unregisterGameChannels(game_id);
 
@@ -229,18 +228,17 @@ class User {
       clearInterval(this.activeChallenges[challenge_id]);
     }
 
-    return fetch(`http://online-go.com/api/v1/challenges/${challenge_id}`, {
+    return fetch(`https://online-go.com/api/v1/challenges/${challenge_id}`, {
       mode: 'cors',
       credentials: 'include',
       headers: {
-        'Content-Type': 'application.json',
+        'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': `Bearer ${this.userData.restToken}`
       },
       method: 'DELETE'
-    });
-
-
+    })
+    .then(response => response.json());
   }
 
   registerGameChannels(game_id) {
