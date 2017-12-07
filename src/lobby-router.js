@@ -4,7 +4,7 @@ const isOgs = require('./api/ogs/verify-ogs-parameters');
 
 const router = express.Router();
 
-router.post('room/join-game', (request, response) => {
+router.post('/accept', (request, response) => {
   let data = request.body;
 
   if (isOgs(data)) {
@@ -21,7 +21,7 @@ router.post('room/join-game', (request, response) => {
   }
 });
 
-router.post('lobby/post-game', (request, response) => {
+router.post('/create', (request, response) => {
   let data = request.body;
 
   if (isOgs(data)) {

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
+const lobbyRouter = require('./lobby-router');
 const OGSUser = require('./api/ogs-user');
 global.activeUsers = {};
 global.activeUsers.ogs = {};
@@ -29,6 +30,8 @@ router.post('/auth', (request, response) => {
   var newUser = new OGSUser(payload);
   activeUsers.ogs[payload.userId] = newUser;
 });
+
+router.use('/challenge', lobbyRouter);
 
 function applyRoutes(app) {
   app.use('/api', router);
