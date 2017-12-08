@@ -1,5 +1,6 @@
 const SocketIOClient = require('socket.io-client');
 const generateUUID = require('uuid/v1');
+const fetch = require('node-fetch');
 
 const ogsUrl = "https://online-go.com";
 const ogsClientConfig = {
@@ -16,22 +17,26 @@ const handlePing = (socket) => {
 
 class User {
 
-  constructor(geSio, userData) {
-    console.log('some idiot actually connected lmao');
-    this.geSio = geSio;
+  constructor(userData) {
     this.userData = userData;
-    this.ogsSio = SocketIOClient(ogsUrl, ogsClientConfig);
 
     //default joined chats
     this.joinedChats = ['english', 'offtopic'];
 
+    this.availableChallenges = [];
     this.activeChallenges = {};
+  }
+
+  init(geSio) {
+    this.geSio = geSio;
+    console.log(`Creating OGS socket for ${this.userData.userId}`);
+    this.ogsSio = SocketIOClient(ogsUrl, ogsClientConfig);
 
     this.handleDisconnect();
     this.setUpChats();
     this.registerOGSListener();
     this.registerGEListeners();
-    this.ogsInit();
+    this.ogsHandshake();
   }
 
   fooBar(payload) {
@@ -83,10 +88,8 @@ class User {
         ...payload,
         uid: "asd." + Math.floor(Math.random() * 100)
       }
-      console.log('Emitting:');
-      console.log(payload);
       this.ogsSio.emit('chat/pm', payload,
-      (response) => {console.log(response); this.geSio.emit('private-chat', response)});
+        (response) => { console.log(response); this.geSio.emit('private-chat', response) });
     });
 
     this.joinChats();
@@ -109,13 +112,32 @@ class User {
   registerOGSListener() {
 
     this.ogsSio.on('active_game', (payload) => this.geSio.emit('active-game', payload));
-    this.ogsSio.on('seekgraph/global', (payload) => this.geSio.emit('seekgraph-global', payload));
+    this.ogsSio.on('seekgraph/global', (payload) => this.handleSeekgraphData.bind(this));
+  }
+
+  /**
+   * OGS uses the "seekgraph/global" channel to:
+   * 1) Dump all the available challenges on connection
+   * 2) Notify the user of newly available challenges
+   * 3) Notify the user that a challenge is closed (e.g. someone else accepted it)
+   */
+  handleSeekgraphData(payload) {
+
+    // If the array has one element, and that element has a "gameStarted" property,
+    // that means it's the third case
+    if (payload[0].gameStarted || payload[0].delete) {
+      let gameIndex = this.availableChallenges.findIndex(game => game.game_id === payload[0].game_id);
+      // TODO notify socket that a challenge was closed
+      this.availableChallenges.splice(gameIndex, 1);
+    } else {
+      this.availableChallenges = this.availableChallenges.concat(payload);
+      if (payload.length === 1) {
+        this.geSio.emit('challenge', payload[0]);
+      }
+    }
   }
 
   registerGEListeners() {
-    this.geSio.on('challenge-accept', (payload) => this.acceptChallenge(payload));
-    this.geSio.on('challenge-create', (payload) => this.openChallenge(payload));
-    this.geSio.on('challenge-cancel', (payload) => this.cancelChallenge(payload));
 
     this.geSio.on('game-disconnect', (payload) => this.disconnectFromGame(payload));
     this.geSio.on('game-move', (payload) => this.ogsSio.emit('game/move', payload));
@@ -141,26 +163,27 @@ class User {
   }
 
   openChallenge(payload) {
-    fetch('http://online-go.com/api/v1/challenges/', {
+    return fetch('https://online-go.com/api/v1/challenges/', {
       mode: 'cors',
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${this.userData.restToken}`
       },
       method: 'POST',
       body: JSON.stringify(payload)
     })
       .then(response => response.json())
-      .then(
-      (data) => {
-        console.log(data);
+      .then(data => {
+
+        // Don't use destructuring here, we use this format for polling keepalive
         let challenge_data = {
           challenge_id: data.challenge,
           game_id: data.game
         }
 
-        this.registerGameChannels();
+        this.registerGameChannels(challenge_data.game_id);
         this.ogsSio.emit('game/connect', {
           game_id: challenge_data.game_id,
           player_id: this.userData.userId,
@@ -172,63 +195,75 @@ class User {
           1000
         );
 
+        // TODO ovde zavrsi logiku za otvaranje igre
         this.ogsSio.on('notification', (payload) => {
           if (payload.type === 'gameStarted' &&
             payload.game_id === challenge_data.game_id) {
-            clearInterval(keepaliveNodeID);
+            clearInterval(this.activeChallenges[challenge_data.challenge_id]);
             this.geSio.emit('challenge-accept', {
               ...challenge_data,
-              player_id: payload.player_id
+              white: payload.white,
+              black: payload.black
             });
           }
         });
-      }
-      )
+        return data;
+      })
+
+      .catch(error => console.log(error));
   }
 
-  acceptChallenge(payload) {
-    if (!payload.hasOwnProperty('game_id')) {
-      return false;
-    }
+  acceptChallenge(game_id, challenge_id) {
 
-    let game_id = payload.game_id;
-    ogsSio.emit('game/connect', payload);
+    this.registerGameChannels(game_id);
 
-    fetch(`http://online-go.com/api/v1/challenges/${payload.game_id}/accept`, {
+    this.ogsSio.emit('game/connect', {
+      game_id,
+      challenge_id,
+      player_id: this.userData.userId
+    });
+
+    // Propagate promise back to REST controller
+    // `http://online-go.com/api/v1/challenges/${challenge_id}/accept`
+    return fetch(`https://online-go.com/api/v1/challenges/${challenge_id}/accept`, {
       mode: 'cors',
       credentials: 'include',
       headers: {
-        'Accept': 'application/json'
+        'Authorization': `Bearer ${this.userData.restToken}`
       },
       method: 'POST'
     })
-      .then(response => response.json())
-      .then(
-      (data) => {
-        console.log(data);
-      }
-      )
+    .then(response => {
+      console.log(response);
+      return response;
+    });
   }
 
-  cancelChallenge(payload) {
+  cancelChallenge(game_id, challenge_id) {
+
+    this.ogsSio.emit('game/disconnect', {game_id});
+
     // Cancel challenge on REST
-    fetch(`http://online-go.com/api/v1/challenges/${payload.challenge_id}`, {
-      mode: 'cors',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application.json',
-        'Accept': 'application/json'
-      },
-      method: 'DELETE'
-    })
-      .then(() => this.unregisterGameChannels());
+    this.unregisterGameChannels(game_id);
 
     /**
      * If we are currently polling "challenge/keepalive", disable it
      */
-    if (this.activeChallenges[payload.challenge_id]) {
-      clearInterval(this.activeChallenges[payload.challenge_id]);
+    if (this.activeChallenges[challenge_id]) {
+      clearInterval(this.activeChallenges[challenge_id]);
     }
+
+    return fetch(`https://online-go.com/api/v1/challenges/${challenge_id}`, {
+      mode: 'cors',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${this.userData.restToken}`
+      },
+      method: 'DELETE'
+    })
+    .then(response => response.json());
   }
 
   registerGameChannels(game_id) {
@@ -269,7 +304,7 @@ class User {
   /**
    * Initialize the client socket towards OGS.
    */
-  ogsInit() {
+  ogsHandshake() {
     this.ogsSio.emit('hostinfo');
 
     this.ogsSio.emit('ui-pushes/subscribe', { channel: "announcements" });
