@@ -16,9 +16,10 @@ const handlePing = (socket) => {
 }
 
 const transformMove = move => {
-  let row = String.fromCharCode(move[0] + 96);
-  let column = String.fromCharCode(move[1] + 96);
-  return column+row;
+  let row = String.fromCharCode(move[0] + 97);
+  let column = String.fromCharCode(move[1] + 97);
+  let ogsMove = column + row;
+  return ogsMove;
 };
 
 class User {
@@ -35,11 +36,8 @@ class User {
     this.challengeIntervalID = {};
   }
 
-  init(geSio) {
-    this.geSio = geSio;
-    console.log(`Creating OGS socket for ${this.userData.userId}`);
-    this.ogsSio = SocketIOClient(ogsUrl, ogsClientConfig);
-    fetch('https://online-go.com/api/v1/ui/overview', {
+  fetchGames() {
+    return fetch('https://online-go.com/api/v1/ui/overview', {
       mode: 'cors',
       credentials: 'include',
       headers: {
@@ -49,17 +47,21 @@ class User {
       method: 'GET'
     })
       .then(response => response.json())
-      .then(overview => {
-        this.activeGames = overview.active_games;
-        this.activeGames.forEach(
-          (game) => this.registerGameChannels(game.json.game_id)
-        );
-        this.handleDisconnect();
-        // this.setUpChats();
-        this.registerOGSListeners();
-        // this.registerGEListeners();
-        this.ogsHandshake();
-      });
+      .then(response => this.activeGames = response.active_games);
+  }
+
+  init(geSio) {
+    this.geSio = geSio;
+    console.log(`Creating OGS socket for ${this.userData.userId}`);
+    this.ogsSio = SocketIOClient(ogsUrl, ogsClientConfig);
+    this.activeGames.forEach(
+      (game) => this.registerGameChannels(game.json.game_id)
+    );
+    this.handleDisconnect();
+    // this.setUpChats();
+    this.registerOGSListeners();
+    // this.registerGEListeners();
+    this.ogsHandshake();
   }
 
   fooBar(payload) {
@@ -119,8 +121,8 @@ class User {
   }
 
   handleDisconnect() {
-    this.geSio.on('disconnect', () => this.ogsSio.close());
-    // TODO: additional cleanup?
+    this.ogsSio.close();
+    this.geSio.close();
   }
 
   /**
@@ -132,19 +134,24 @@ class User {
     this.geSio.emit('public-chat', { payload, type }); // TODO: unpack payload?
   }
 
-  handleActiveGame(activeGame) {
-    if (activeGame.phase === "finished") {
-      let gameIndex = this.activeGames.findIndex(game => game.json.game_id === activeGame.id);
-      if (gameIndex > -1) {
-        this.activeGames.splice(gameIndex, 1);
-      }
-      this.unregisterGameChannels(activeGame.id);
-    }
-  }
-
   registerOGSListeners() {
-
-    // this.ogsSio.on('active_game', (payload) => this.handleActiveGame.bind(this));
+    this.ogsSio.on('notification', (payload) => {
+      if (payload.type === 'gameEnded') {
+        this.geSio.emit('game/game', {
+          type: payload.type,
+          game_id: payload.game_id,
+          white: payload.white,
+          black: payload.black,
+          winner: payload.black_lost ? payload.black : payload.white,
+          timestamp: payload.timestamp
+        });
+        let gameIndex = this.activeGames.findIndex(game => game.json.game_id === activeGame.id);
+        if (gameIndex > -1) {
+          this.activeGames.splice(gameIndex, 1);
+        }
+        this.unregisterGameChannels(payload.game_id);
+      }
+    });
     this.ogsSio.on('seekgraph/global', (payload) => this.handleSeekgraphData.bind(this));
   }
 
@@ -185,15 +192,15 @@ class User {
           player_id: this.userData.userId,
           move: ".." // OGS understands ".." as a pass
         });
-        return {success: true, message: "Move successfully sent" };
+        return { success: true, message: "Move successfully sent" };
       case 'resign':
         this.ogsSio.emit('game/resign', {
           game_id: action.game_id,
           player_id: this.userData.userId
         });
-        return {success: true, message: "Move successfully sent" };
+        return { success: true, message: "Move successfully sent" };
       default:
-        return {success: false, message: "Unknown action"};
+        return { success: false, message: "Unknown action" };
     }
   }
 
@@ -309,16 +316,27 @@ class User {
       .then(response => response.json());
   }
 
-  handleGameClock(clock) {
-    let game = this.activeGames.find(game => game.json.game_id === clock.game_id);
-    console.log(this.activeGames);
-    console.log(clock.game_id);
-    game.json.clock = clock;
+  receiveGameClock(clock) {
+    let game = this.activeGames.find(game => game.id === clock.game_id);
+    if (game) {
+      game.json.clock = clock;
+    } else {
+      this.fetchGames().then(() => this.receiveGameClock(clock));
+      return;
+    }
   }
 
-  handleGameMove(moveData) {
+  receiveGameMove(moveData) {
+    console.log(moveData);
     let gameToUpdate = this.activeGames.find(game => game.json.game_id === moveData.game_id);
-    gameToUpdate.json.moves.push(moveData.move);
+    if (gameToUpdate) {
+      let moves = gameToUpdate.json.moves;
+      // TODO handle duplicate moves
+      gameToUpdate.json.moves.push(moveData.move);
+    } else {
+      this.fetchGames().then(() => this.receiveGameMove(moveData));
+      return;
+    }
     this.geSio.emit('game/move', {
       server: "ogs",
       room: "ogs",
@@ -328,10 +346,13 @@ class User {
     });
   }
 
-  handleGameData(newGame) {
+  receiveGameData(newGame) {
     let gameIndex = this.activeGames.findIndex(game => game.json.game_id === newGame.game_id);
-    if (gameIndex === -1) {
+    if (gameIndex !== -1) {
       this.activeGames[gameIndex].json = newGame
+    } else {
+      this.fetchGames().then(() => this.receiveGameData(newGame));
+      return;
     }
 
     this.geSio.emit('game/game', {
@@ -347,9 +368,9 @@ class User {
     this.ogsSio.emit('chat/join', { channel: `game-${game_id}` })
     this.ogsSio.on(`game/${game_id}/chat`, (payload) => this.geSio.emit('game-chat', { payload, game_id }));
 
-    this.ogsSio.on(`game/${game_id}/gamedata`, this.handleGameData.bind(this));
-    this.ogsSio.on(`game/${game_id}/clock`, this.handleGameClock.bind(this));
-    this.ogsSio.on(`game/${game_id}/move`, this.handleGameMove.bind(this));
+    this.ogsSio.on(`game/${game_id}/gamedata`, this.receiveGameData.bind(this));
+    this.ogsSio.on(`game/${game_id}/clock`, this.receiveGameClock.bind(this));
+    this.ogsSio.on(`game/${game_id}/move`, this.receiveGameMove.bind(this));
     // this.ogsSio.on(`game/${game_id}/conditional_moves`, (payload) => this.geSio.emit('game-conditional-moves', { payload, game_id }));
     // this.ogsSio.on(`game/${game_id}/reset-chats`, (payload) => this.geSio.emit('game-reset-chats', { payload, game_id }));
     // this.ogsSio.on(`game/${game_id}/undo_requested`, (payload) => this.geSio.emit('game-undo-requested', { payload, game_id }));

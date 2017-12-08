@@ -206,23 +206,65 @@ authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
                     for (let i = 0; i < 10; i++) {
                       setTimeout(
                         () => {
+                          let body = {
+                            server: "ogs",
+                            room: "ogs",
+                            lobby: "ogs",
+                            account: i % 2 ? global.firstUserAccount : global.secondUserAccount,
+                            game_id: gameResponse.game,
+                            type: 'move',
+                            move: [parseInt(i / 9), i % 9]
+                          };
+                          console.log('====================================')
+                          console.log('Attempting to make move: ')
+                          console.log(body)
+                          console.log('====================================')
                           fetch('http://localhost:4700/api/game', {
                             headers: {
                               'Content-Type': 'application/json',
                               'Accept': 'application/json'
                             },
                             method: 'POST',
-                            body: JSON.stringify({
-                              server: "ogs",
-                              room: "ogs",
-                              lobby: "ogs",
-                              account: i % 2 ? global.firstUserAccount : global.secondUserAccount,
-                              move: [parseInt(i / 9), i % 9]
-                            })
+                            body: JSON.stringify(body)
                           })
                         }
                         , i * 1000);
                     }
+                    setTimeout(() => {
+                      fetch('http://localhost:4700/api/game', {
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Accept': 'application/json'
+                        },
+                        method: 'POST',
+                        body: JSON.stringify({
+                          server: "ogs",
+                          room: "ogs",
+                          lobby: "ogs",
+                          type: 'pass',
+                          game_id: gameResponse.game,
+                          account: global.secondUserAccount
+                        })
+                      });
+                      setTimeout(
+                        () => fetch('http://localhost:4700/api/game', {
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                          },
+                          method: 'POST',
+                          body: JSON.stringify({
+                            server: "ogs",
+                            room: "ogs",
+                            lobby: "ogs",
+                            type: 'pass',
+                            game_id: gameResponse.game,
+                            account: global.firstUserAccount
+                          })
+                        })
+                        , 2000);
+
+                    }, 14000)
                   }
                   )
               }

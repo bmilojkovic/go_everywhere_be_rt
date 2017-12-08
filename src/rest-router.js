@@ -2,12 +2,10 @@ const express = require('express');
 const router = express.Router();
 
 const lobbyRouter = require('./lobby-router');
+const gameRouter = require('./game-router');
 const OGSUser = require('./api/ogs-user');
 global.activeUsers = {};
 global.activeUsers.ogs = {};
-
-router.get('/', (request, response) => response.send('REST API is working!'));
-router.post('/', (request, response) => response.json({message: request.body}));
 
 router.post('/auth', (request, response) => {
   let payload = request.body;
@@ -20,9 +18,9 @@ router.post('/auth', (request, response) => {
     'notificationAuth',
     'incidentAuth'
   ];
-  for (var i=0; i<requiredFields.length; i++) {
+  for (var i = 0; i < requiredFields.length; i++) {
     if (!payload.hasOwnProperty(requiredFields[i])) {
-      response.status(400).json({error: `missing property: "${property}"`});
+      response.status(400).json({ error: `missing property: "${property}"` });
       return;
     }
   }
@@ -30,10 +28,13 @@ router.post('/auth', (request, response) => {
   const newUser = new OGSUser(payload);
   activeUsers.ogs[payload.userId] = newUser;
 
-  response.status(200).json({status: "success"});
+  newUser.fetchGames()
+    .then(() => response.status(200).json({ status: "success" }));
+
 });
 
 router.use('/challenge', lobbyRouter);
+router.use('/game', gameRouter);
 
 function applyRoutes(app) {
   app.use('/api', router);

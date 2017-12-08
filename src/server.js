@@ -22,15 +22,22 @@ app.use(bodyParser.urlencoded({ extended: true }));
 rest_routes(app);
 
 var server = http.Server(app);
-const io = socketIO(server);
+const io = socketIO(server, {
+  pingInterval: 5000,
+  pingTimeout: 30000,
+});
 const PORT = process.env.PORT || 4700;
 server.listen(PORT, () => console.log(`Server up on port ${PORT}`));
 
 io.on('connection', (socket) => console.log(`New user connected: ${socket.request.connection.remoteAddress}`));
 
-io.on('connection', (socket) =>
+io.on('connection', (socket) => {
   socket.on('auth', (payload) => {
-    console.log(activeUsers.ogs);
+    socket.userId = payload.userId;
     activeUsers.ogs[payload.userId].init(socket);
-  })
-);
+  });
+  socket.on('disconnect', () => {
+    activeUsers.ogs[socket.userId].handleDisconnect();
+    delete activeUsers.ogs[socket.userId];
+  });
+});
