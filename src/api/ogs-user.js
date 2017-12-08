@@ -23,6 +23,7 @@ class User {
     //default joined chats
     this.joinedChats = ['english', 'offtopic'];
 
+    this.availableChallenges = [];
     this.activeChallenges = {};
   }
 
@@ -111,7 +112,29 @@ class User {
   registerOGSListener() {
 
     this.ogsSio.on('active_game', (payload) => this.geSio.emit('active-game', payload));
-    this.ogsSio.on('seekgraph/global', (payload) => this.geSio.emit('seekgraph-global', payload));
+    this.ogsSio.on('seekgraph/global', (payload) => this.handleSeekgraphData.bind(this));
+  }
+
+  /**
+   * OGS uses the "seekgraph/global" channel to:
+   * 1) Dump all the available challenges on connection
+   * 2) Notify the user of newly available challenges
+   * 3) Notify the user that a challenge is closed (e.g. someone else accepted it)
+   */
+  handleSeekgraphData(payload) {
+
+    // If the array has one element, and that element has a "gameStarted" property,
+    // that means it's the third case
+    if (payload[0].gameStarted) {
+      let gameIndex = this.availableChallenges.findIndex(game => game.game_id === payload[0].game_id);
+
+      this.availableChallenges.splice(gameIndex, 1);
+    } else {
+      this.availableChallenges = this.availableChallenges.concat(payload);
+      if (payload.length === 1) {
+        this.geSio.emit('challenge', payload[0]);
+      }
+    }
   }
 
   registerGEListeners() {
