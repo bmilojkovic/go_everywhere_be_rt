@@ -113,7 +113,7 @@ socketTwo.on('challenge-accept', payload => console.log(payload));
 authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
 
   console.log('User data aquired through OGS REST for User 1: \n' + JSON.stringify(firstUserData));
-
+  global.firstUserAccount = firstUserData.userId;
   console.log('Request to authenticate User1 1');
 
   fetch('http://localhost:4700/api/auth', {
@@ -159,7 +159,7 @@ authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
           authenticate('peradetlic', 'qweqwe').then((secondUserData) => {
 
             console.log('User data aquired through OGS REST for User 2' + JSON.stringify(secondUserData));
-
+            global.secondUserAccount = secondUserData.userId;
             console.log('Request to authenticate User 2');
             fetch('http://localhost:4700/api/auth', {
               headers: {
@@ -183,6 +183,7 @@ authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
 
                 console.log('User 2 accepts the challange: \n')
 
+                global.game_id = gameResponse.game;
                 fetch('http://localhost:4700/api/challenge/accept', {
                   headers: {
                     'Content-Type': 'application/json',
@@ -199,7 +200,31 @@ authenticate('mytestusername', 'dusan4323').then((firstUserData) => {
                   })
                 })
                   .then(response => response.json())
-                  .then(response => console.log('Accepting challange response:\n' + JSON.stringify(response)));
+                  .then(response => console.log('Accepting challange response:\n' + JSON.stringify(response)))
+                  .then(
+                  () => {
+                    for (let i = 0; i < 10; i++) {
+                      setTimeout(
+                        () => {
+                          fetch('http://localhost:4700/api/game', {
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Accept': 'application/json'
+                            },
+                            method: 'POST',
+                            body: JSON.stringify({
+                              server: "ogs",
+                              room: "ogs",
+                              lobby: "ogs",
+                              account: i % 2 ? global.firstUserAccount : global.secondUserAccount,
+                              move: [parseInt(i / 9), i % 9]
+                            })
+                          })
+                        }
+                        , i * 1000);
+                    }
+                  }
+                  )
               }
             });
           });
