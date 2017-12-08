@@ -125,9 +125,9 @@ class User {
 
     // If the array has one element, and that element has a "gameStarted" property,
     // that means it's the third case
-    if (payload[0].gameStarted) {
+    if (payload[0].gameStarted || payload[0].delete) {
       let gameIndex = this.availableChallenges.findIndex(game => game.game_id === payload[0].game_id);
-
+      // TODO notify socket that a challenge was closed
       this.availableChallenges.splice(gameIndex, 1);
     } else {
       this.availableChallenges = this.availableChallenges.concat(payload);
