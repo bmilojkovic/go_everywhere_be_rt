@@ -327,7 +327,6 @@ class User {
   }
 
   receiveGameMove(moveData) {
-    console.log(moveData);
     let gameToUpdate = this.activeGames.find(game => game.json.game_id === moveData.game_id);
     if (gameToUpdate) {
       let moves = gameToUpdate.json.moves;
