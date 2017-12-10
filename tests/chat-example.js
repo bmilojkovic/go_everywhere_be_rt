@@ -9,6 +9,8 @@ var bodyParser = require('body-parser');
 var axios = require('axios');
 var qs = require('qs');
 
+const fetch = require('node-fetch');
+
 var request = function (method, uri, d = null, token = '') {
   if (!method) {
     console.error('API function call requires method argument')
@@ -67,18 +69,42 @@ socketOne.on('private-chat', (payload) => console.log(`peradetlic received messa
 socketOne.on('connect', () => {
   authenticate('peradetlic', 'qweqwe').then((userData) => {
     console.log(userData);
-    socketOne.emit('authenticate', userData);
-    setInterval(
-      () => socketOne.emit('private-chat', {
-        player_id: 478487,
-        username: "mytestusername",
-        message:  new String(Math.floor(Math.random() * 1000))
-      }),
-      2000)
+
+    fetch('http://localhost:4700/api/auth', {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      method: 'POST',
+      body: JSON.stringify({
+              ...userData,
+        server: "ogs",
+        room: "ogs",
+        lobby: "ogs"
+      })
+    }).then((response)=>{
+
+      if (response.status !== 200) {
+        console.log('Greska u autentifikaciji sa expres-om!');
+      }
+
+      console.log("Poslato");
+
+      socketOne.emit('auth',{
+        userId:userData.userId
+      });
+
+      while(true){
+
+      }
+
+
+    });
+
   });
 });
 
-socketTwo.on('private-chat', (payload) => console.log(`mytestusername received message "${payload.message.m}" from user ${payload.from.username}`));
+/*socketTwo.on('private-chat', (payload) => console.log(`mytestusername received message "${payload.message.m}" from user ${payload.from.username}`));
 socketTwo.on('connect', () => {
   authenticate('mytestusername', 'dusan4323').then((userData) => {
     console.log(userData);
@@ -91,4 +117,4 @@ socketTwo.on('connect', () => {
       }),
       2000);
   });
-});
+});*/

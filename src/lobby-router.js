@@ -41,7 +41,7 @@ router.post('/create', (request, response) => {
   let data = request.body;
 
   if (isOgs(data)) {
-    let user = activeUsers.ogs[data.account];
+    let user = activeUsers.ogs[data.account]; //TODO: In the second attempt to open a challenge by the same user, user variable is undefined ???
     user.openChallenge(data.game)
       .then(body => response.json(body))
       .catch(ogsResponse => response.status(400).json(ogsResponse.data));
@@ -62,5 +62,24 @@ router.post('/cancel', (request, response) => {
     response.status(403).json({ message: "You are trying to access an unknown server" });
   }
 });
+
+router.get('/openGames/:accID',(request,response)=>{
+  if(activeUsers.ogs[request.params.accID]) {
+    let challenges = activeUsers.ogs[request.params.accID].availableChallenges;
+    response.status(200).json(activeUsers.ogs[request.params.accID].availableChallenges);
+  }else{
+    response.status(404).json({message:"undefined parameter"});
+  }
+});
+
+router.get('/inProgress/:accID',(request,response)=>{
+  if(activeUsers.ogs[request.params.accID]) {
+    let challenges = activeUsers.ogs[request.params.accID].activeGames;
+    response.status(200).json(activeUsers.ogs[request.params.accID].activeGames);
+  }else{
+    response.status(404).json({message:"undefined parameter"});
+  }
+});
+
 
 module.exports = router;

@@ -31,7 +31,7 @@ class User {
     this.joinedChats = ['english', 'offtopic'];
 
     this.availableChallenges = [];
-    this.activeGames = [];
+    this.activeGames = []; //games that are not finished
 
     this.challengeIntervalID = {};
   }
@@ -47,7 +47,7 @@ class User {
       method: 'GET'
     })
       .then(response => response.json())
-      .then(response => this.activeGames = response.active_games);
+      .then(response => {this.activeGames = response.active_games});
   }
 
   init(geSio) {
@@ -57,6 +57,9 @@ class User {
     this.activeGames.forEach(
       (game) => this.registerGameChannels(game.json.game_id)
     );
+
+
+
     this.handleDisconnect();
     // this.setUpChats();
     this.registerOGSListeners();
@@ -122,7 +125,7 @@ class User {
 
   handleDisconnect() {
     this.ogsSio.close();
-    this.geSio.close();
+    //this.geSio.close();
   }
 
   /**
@@ -135,6 +138,7 @@ class User {
   }
 
   registerOGSListeners() {
+
     this.ogsSio.on('notification', (payload) => {
       if (payload.type === 'gameEnded') {
         this.geSio.emit('game/game', {
@@ -152,7 +156,7 @@ class User {
         this.unregisterGameChannels(payload.game_id);
       }
     });
-    this.ogsSio.on('seekgraph/global', (payload) => this.handleSeekgraphData.bind(this));
+    this.ogsSio.on('seekgraph/global', (payload) => this.handleSeekgraphData(payload).bind(this));
   }
 
   /**
@@ -161,7 +165,12 @@ class User {
    * 2) Notify the user of newly available challenges
    * 3) Notify the user that a challenge is closed (e.g. someone else accepted it)
    */
+
+  //TODO: this function is never invoked ???
+
   handleSeekgraphData(payload) {
+
+    console.log('Seek: \n'+JSON.stringify(payload));
 
     // If the array has one element, and that element has a "gameStarted" property,
     // that means it's the third case
@@ -170,6 +179,7 @@ class User {
       // TODO notify socket that a challenge was closed
       this.availableChallenges.splice(gameIndex, 1);
     } else {
+
       this.availableChallenges = this.availableChallenges.concat(payload);
       if (payload.length === 1) {
         this.geSio.emit('challenge', payload[0]);

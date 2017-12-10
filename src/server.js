@@ -14,7 +14,7 @@ app.use(cors());
 // middleware for parsing Content-Type: application/json
 app.use(bodyParser.json());
 // middleware for parsing Content-Type: application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({extended: true}));
 // logger middleware
 //app.use(morgan('combined'));
 
@@ -37,7 +37,9 @@ io.on('connection', (socket) => {
     activeUsers.ogs[payload.userId].init(socket);
   });
   socket.on('disconnect', () => {
-    activeUsers.ogs[socket.userId].handleDisconnect();
-    delete activeUsers.ogs[socket.userId];
+    if (activeUsers.ogs[socket.userId]) {
+      activeUsers.ogs[socket.userId].handleDisconnect();
+      delete activeUsers.ogs[socket.userId];
+    }
   });
 });
