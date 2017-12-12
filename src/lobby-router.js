@@ -82,4 +82,12 @@ router.get('/inProgress/:accID',(request,response)=>{
 });
 
 
+router.get('/joinedChats/:accID',(request,response)=>{
+  if(activeUsers.ogs[request.params.accID]) {
+    response.status(200).json(activeUsers.ogs[request.params.accID].joinedChats);
+  }else{
+    response.status(404).json({message:"undefined parameter"});
+  }
+});
+
 module.exports = router;
