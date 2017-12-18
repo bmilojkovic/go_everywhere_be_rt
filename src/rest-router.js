@@ -33,6 +33,10 @@ router.post('/auth', (request, response) => {
 
 });
 
+router.get('/token/:userID',(request,response)=>{
+  response.status(200).json({restToken:activeUsers.ogs[request.params.userID].userData.restToken}).send();
+});
+
 router.use('/challenge', lobbyRouter);
 router.use('/game', gameRouter);
 

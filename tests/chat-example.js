@@ -94,6 +94,18 @@ socketOne.on('connect', () => {
         userId:userData.userId
       });
 
+      fetch('http://online-go.com/v1/games/', {
+        headers: {
+          'Accept': 'application/json'
+        },
+        method: 'GET',
+        body: JSON.stringify({
+          ...userData,
+        })
+      }).then((response)=>{
+        console.log(response);
+      });
+
       while(true){
 
       }
